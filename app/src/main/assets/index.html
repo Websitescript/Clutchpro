@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Clutch Pro</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;touch-action:none}
+html,body{margin:0;height:100%;overflow:hidden;background:#8fd0ff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:#fff}
+canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block}
+.hidden{display:none!important}
+#hud{position:fixed;inset:0;pointer-events:none;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+#hud>*{position:absolute}
+.pill{background:rgba(10,24,44,.62);border:1px solid rgba(255,255,255,.18);border-radius:3vh;padding:.8vh 2vh;font-weight:700;font-size:3.6vh;backdrop-filter:blur(3px)}
+#topL{left:2vh;top:2vh;max-width:42vw}
+#mission{font-size:3.2vh;font-weight:700;text-shadow:0 .2vh .6vh #000}
+#timer{font-size:6vh;font-weight:800;line-height:1;margin-top:.4vh;text-shadow:0 .3vh .8vh #000}
+#timer.low{color:#ff6b5e}
+#tip{font-size:2.8vh;margin-top:1vh;color:#ffe27a;text-shadow:0 .2vh .6vh #000;font-weight:600}
+#topC{left:50%;top:2vh;transform:translateX(-50%);width:26vh;text-align:center}
+#dmgBar{height:2.2vh;background:rgba(0,0,0,.5);border-radius:2vh;overflow:hidden;border:1px solid rgba(255,255,255,.3)}
+#dmgFill{height:100%;width:0;background:linear-gradient(90deg,#ffd34d,#ff4d3a)}
+#dmgLbl{font-size:2.2vh;font-weight:700;margin-top:.3vh;text-shadow:0 .2vh .5vh #000}
+#topR{right:2vh;top:2vh;display:flex;gap:1.2vh;align-items:center;pointer-events:auto}
+.rbtn{width:8vh;height:8vh;border-radius:50%;border:.3vh solid rgba(255,255,255,.5);background:linear-gradient(#3a8dde,#1b4f9c);font-size:4vh;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 .5vh 1.2vh rgba(0,0,0,.4)}
+.rbtn:active{filter:brightness(1.3)}
+#coins{color:#ffd34d}
+#arrowBox{left:50%;top:13vh;transform:translateX(-50%);text-align:center;text-shadow:0 .3vh .8vh #000}
+#arrow{font-size:9vh;line-height:1;color:#7dff8f;display:inline-block;filter:drop-shadow(0 .3vh .5vh #000)}
+#dist{font-size:3.4vh;font-weight:800;margin-top:-1vh}
+#toast{left:50%;top:32%;transform:translate(-50%,-50%);font-size:6vh;font-weight:900;text-align:center;text-shadow:0 .4vh 1vh #000;opacity:0;transition:opacity .25s;white-space:nowrap}
+#toast.show{opacity:1}
+#wheel{left:2vh;bottom:2vh;width:42vh;height:42vh;pointer-events:auto;touch-action:none}
+#wheelRot{width:100%;height:100%;filter:drop-shadow(0 1vh 1.5vh rgba(0,0,0,.5))}
+#dials{left:47vh;bottom:1.5vh;display:flex;align-items:flex-end;gap:.5vh}
+#dials canvas{width:24vh;height:24vh}
+#gearBig{position:absolute;left:50%;bottom:19vh;transform:translateX(-50%);font-size:9vh;font-weight:900;color:#fff;text-shadow:0 .4vh 1vh #000;width:12vh;text-align:center}
+#gearBig.warn{color:#ff6b5e}
+#engBtn{left:47vh;bottom:27vh;pointer-events:auto;width:9vh;height:9vh;border-radius:50%;border:.5vh solid #888;background:radial-gradient(#444,#111);color:#ddd;font-weight:800;font-size:2.4vh;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1}
+#engBtn.on{border-color:#3cff7a;color:#3cff7a;box-shadow:0 0 2vh #3cff7a}
+#shifter{right:52vh;bottom:1.5vh;width:36vh;height:36vh;pointer-events:auto;touch-action:none}
+#pedals{right:1.5vh;bottom:1.5vh;display:flex;gap:1.2vh;align-items:flex-end}
+.pedal{pointer-events:auto;border-radius:2vh;border:.4vh solid rgba(255,255,255,.35);display:flex;align-items:flex-end;justify-content:center;padding-bottom:1.2vh;font-weight:800;font-size:2.3vh;letter-spacing:.1vh;color:#fff;text-shadow:0 .2vh .4vh #000;box-shadow:inset 0 .8vh 1.5vh rgba(255,255,255,.18),0 .6vh 1.4vh rgba(0,0,0,.45);touch-action:none}
+.pedal.down{transform:translateY(.8vh) scale(.97);filter:brightness(1.35)}
+#pClutch{width:14vh;height:24vh;background:repeating-linear-gradient(0deg,#2c3e5a 0 1.2vh,#233149 1.2vh 2.4vh)}
+#pBrake{width:15vh;height:24vh;background:repeating-linear-gradient(0deg,#b8332a 0 1.2vh,#982821 1.2vh 2.4vh)}
+#pGas{width:17vh;height:31vh;background:repeating-linear-gradient(0deg,#2fa84f 0 1.2vh,#27883f 1.2vh 2.4vh)}
+#cMeter{position:absolute;left:1vh;top:1vh;bottom:5vh;width:1.4vh;background:rgba(0,0,0,.45);border-radius:1vh;overflow:hidden}
+#cFill{position:absolute;left:0;right:0;bottom:0;background:#ffd34d;height:100%}
+#pClutch{position:relative}
+#sideBtns{right:1.5vh;bottom:34vh;display:flex;flex-direction:column;gap:1.2vh;pointer-events:auto}
+.sbtn{width:14vh;height:7vh;border-radius:1.6vh;border:.3vh solid rgba(255,255,255,.4);background:linear-gradient(#3a8dde,#1b4f9c);font-weight:800;font-size:2.4vh;display:flex;align-items:center;justify-content:center;box-shadow:0 .5vh 1vh rgba(0,0,0,.4)}
+.sbtn.act{background:linear-gradient(#ff7a5c,#c0301c)}
+.sbtn:active{filter:brightness(1.3)}
+.screen{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(6,18,38,.55);backdrop-filter:blur(2px);z-index:10}
+.card{background:linear-gradient(#173a6b,#0d2244);border:.4vh solid rgba(255,255,255,.25);border-radius:3vh;padding:3vh 5vh;text-align:center;box-shadow:0 2vh 5vh rgba(0,0,0,.5);max-width:92vw}
+h1{margin:0;font-size:9vh;letter-spacing:.3vh;font-weight:900;line-height:1;background:linear-gradient(#fff,#8fd0ff);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 .5vh .6vh rgba(0,0,0,.5))}
+.sub{font-size:3vh;opacity:.85;margin:.8vh 0 2.4vh}
+.row{display:flex;gap:2vh;justify-content:center;flex-wrap:wrap}
+.btn{min-width:24vh;padding:2vh 3vh;border-radius:2vh;border:.3vh solid rgba(255,255,255,.4);background:linear-gradient(#ffb23d,#e0711a);color:#fff;font-weight:900;font-size:3.4vh;text-shadow:0 .2vh .4vh rgba(0,0,0,.5);box-shadow:0 .8vh 0 #9b4a0c,0 1.2vh 2vh rgba(0,0,0,.4);cursor:pointer}
+.btn.blue{background:linear-gradient(#4aa0ff,#1f62c4);box-shadow:0 .8vh 0 #123f85,0 1.2vh 2vh rgba(0,0,0,.4)}
+.btn small{display:block;font-size:2vh;font-weight:600;opacity:.9}
+.btn:active{transform:translateY(.6vh);box-shadow:0 .2vh 0 #000}
+.how{font-size:2.5vh;opacity:.92;margin-top:2.6vh;line-height:1.45;text-align:left;display:inline-block}
+.how b{color:#ffd34d}
+.mini{margin-top:2vh;font-size:2.4vh;opacity:.85}
+.mini span{cursor:pointer;text-decoration:underline;margin:0 1.5vh}
+#stats{font-size:3.4vh;line-height:1.5;margin:1.6vh 0 2.6vh}
+</style></head><body>
+<canvas id="gl"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="topL"><div id="mission" class="pill"></div><div id="timer"></div><div id="tip"></div></div>
+  <div id="topC"><div id="dmgBar"><div id="dmgFill"></div></div><div id="dmgLbl">DAMAGE 0%</div></div>
+  <div id="topR"><div id="coins" class="pill">🪙 0</div><div class="rbtn" id="bCam">📷</div><div class="rbtn" id="bSnd">🔊</div><div class="rbtn" id="bPause">⏸</div></div>
+  <div id="arrowBox" class="hidden"><div id="arrow">▲</div><div id="dist"></div></div>
+  <div id="toast"></div>
+
+  <div id="wheel"><svg id="wheelRot" viewBox="0 0 100 100">
+    <defs><radialGradient id="hub" cx=".4" cy=".35"><stop offset="0" stop-color="#d8dde6"/><stop offset="1" stop-color="#6b7480"/></radialGradient></defs>
+    <circle cx="50" cy="50" r="43" fill="none" stroke="#1c1c20" stroke-width="10"/>
+    <circle cx="50" cy="50" r="43" fill="none" stroke="#3a3a42" stroke-width="2.5" stroke-dasharray="3 2"/>
+    <path d="M50 50 L9 58 M50 50 L91 58 M50 50 L50 92" stroke="#2a2a30" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="50" cy="50" r="13" fill="url(#hub)" stroke="#222" stroke-width="2"/>
+    <rect x="47" y="4" width="6" height="11" rx="2" fill="#ff4d3a"/>
+  </svg></div>
+
+  <div id="dials"><canvas id="tach"></canvas><canvas id="spd"></canvas></div>
+  <div id="gearBig">N</div>
+  <div id="engBtn">ENGINE<br>START</div>
+
+  <canvas id="shifter"></canvas>
+  <div id="sideBtns"><div class="sbtn" id="bHB">HANDBRAKE</div><div class="sbtn" id="bHorn">HORN</div></div>
+  <div id="pedals">
+    <div class="pedal" id="pClutch"><div id="cMeter"><div id="cFill"></div></div>CLUTCH</div>
+    <div class="pedal" id="pBrake">BRAKE</div>
+    <div class="pedal" id="pGas">GAS</div>
+  </div>
+</div>
+
+<div id="menu" class="screen">
+  <div class="card">
+    <h1>CLUTCH PRO</h1>
+    <div class="sub">Real manual-gearbox car driving · 3D city</div>
+    <div class="row">
+      <div class="btn" data-mode="free">FREE DRIVE<small>learn the clutch</small></div>
+      <div class="btn blue" data-mode="check">CHECKPOINTS<small>beat the clock</small></div>
+      <div class="btn blue" data-mode="park">PARKING<small>stop in the bay</small></div>
+    </div>
+    <div class="how">
+      <b>1.</b> Hold <b>CLUTCH</b> (slide finger up to ease it out) → press <b>ENGINE</b><br>
+      <b>2.</b> Drag the lever into <b>1</b> (needs clutch pressed)<br>
+      <b>3.</b> Release clutch slowly <b>+</b> add gas. Too fast = <b>stall</b><br>
+      <b>4.</b> Shift up around <b>3000–5000 RPM</b>. Drive on the <b>left</b>
+    </div>
+    <div class="mini">🪙 <span id="mCoins" style="text-decoration:none;cursor:default">0</span> · Best: <span id="mBest" style="text-decoration:none;cursor:default">–</span> · <span id="mTips">Tips: ON</span></div>
+  </div>
+</div>
+
+<div id="pause" class="screen hidden"><div class="card"><h1 style="font-size:7vh">PAUSED</h1><div class="sub">&nbsp;</div>
+  <div class="row"><div class="btn" id="pResume">RESUME</div><div class="btn blue" id="pMenu">MENU</div></div></div></div>
+
+<div id="over" class="screen hidden"><div class="card"><h1 id="oTitle" style="font-size:7vh">GAME OVER</h1>
+  <div id="stats"></div>
+  <div class="row"><div class="btn" id="oRetry">RETRY</div><div class="btn blue" id="oMenu">MENU</div></div></div></div>
+
+<script src="three.min.js"></script>
+<script src="physics.js"></script>
+<script src="game.js"></script>
+</body></html>
